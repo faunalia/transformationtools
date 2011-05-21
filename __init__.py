@@ -2,8 +2,8 @@
 
 """
 /***************************************************************************
-Name                 : Transformations
-Description          : Allow to use grids and towgs84 to transform a vector/raster
+Name                 : Transformation tools
+Description          : Help to use grids and towgs84 to transform a vector/raster
 Date                 : April 16, 2011 
 copyright            : (C) 2011 by Giuseppe Sucameli (Faunalia)
 email                : brush.tyler@gmail.com
@@ -21,10 +21,10 @@ email                : brush.tyler@gmail.com
 """
 
 def name():
-	return "Transformations"
+	return "Transformation Tools"
 
 def description():
-	return "Allow to use grids and towgs84 to transform a vector/raster"
+	return "Help to use grids and towgs84 to transform a vector/raster"
 
 def version():
 	return "0.0.1"

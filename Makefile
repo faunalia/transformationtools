@@ -1,21 +1,24 @@
 UI_SOURCES=$(wildcard ui/*.ui)
 UI_FILES=$(patsubst %.ui,%_ui.py,$(UI_SOURCES))
 
-GEN_FILES = ${UI_FILES} resources.py
+RC_SOURCES=$(wildcard *.qrc)
+RC_FILES=$(patsubst %.qrc,%_rc.py,$(RC_SOURCES))
+
+GEN_FILES = ${UI_FILES} ${RC_FILES}
 
 all: $(GEN_FILES)
 ui: $(UI_FILES)
-resources: resources.py
+resources: $(RC_FILES)
 
 $(UI_FILES): %_ui.py: %.ui
 	pyuic4 -o $@ $<
 	
-resources.py: resources.qrc
-	pyrcc4 -o resources.py resources.qrc
+${RC_FILES}: %_rc.py %.qrc
+	pyrcc4 -o $@ $<
 
 
 clean:
 	rm -f $(GEN_FILES) *.pyc
 
 package:
-	cd .. && rm -f TransformationTool.zip && zip -r TransformationTool.zip TransformationTool -x \*.svn* -x \*.pyc -x \*~ -x \*entries\* -x \*.git\*
+	make all && cd .. && rm -f TransformationTools.zip && zip -r TransformationTools.zip TransformationTools -x \*.svn* -x \*.pyc -x \*~ -x \*entries\* -x \*.git\*

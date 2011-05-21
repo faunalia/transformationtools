@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
 
+"""
+/***************************************************************************
+Name                 : Transformation tools
+Description          : Help to use grids and towgs84 to transform a vector/raster
+Date                 : April 16, 2011 
+copyright            : (C) 2011 by Giuseppe Sucameli (Faunalia)
+email                : brush.tyler@gmail.com
+
+ ***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
+"""
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -58,9 +78,9 @@ class TransformationsTableModel(QAbstractTableModel):
 			if index.column() == 0:
 				val = t.name
 			elif index.column() == 1:
-				val = t.inCrs
+				val = t.incrs
 			elif index.column() == 2:
-				val = t.outCrs
+				val = t.outcrs
 			elif index.column() == 3:
 				if t.useTowgs84():
 					val = "towgs84=%s" % t.towgs84

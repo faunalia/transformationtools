@@ -2,9 +2,9 @@
 
 """
 /***************************************************************************
-Name                 : Dockable MirrorMap
-Description          : Creates a dockable map canvas
-Date                 : February 1, 2011 
+Name                 : Transformation tools
+Description          : Help to use grids and towgs84 to transform a vector/raster
+Date                 : April 16, 2011 
 copyright            : (C) 2011 by Giuseppe Sucameli (Faunalia)
 email                : brush.tyler@gmail.com
 
@@ -23,9 +23,9 @@ email                : brush.tyler@gmail.com
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from ui.DlgAbout_ui import Ui_DlgAbout
+from ui.dlgAbout_ui import Ui_DlgAbout
 
-import resources
+import resources_rc
 
 class DlgAbout(QDialog, Ui_DlgAbout):
 
@@ -33,4 +33,4 @@ class DlgAbout(QDialog, Ui_DlgAbout):
 		QDialog.__init__(self, parent)
 		
 		self.setupUi(self)
-		self.logo.setPixmap( QPixmap( ":/icons/faunalia_logo.png" ) )
+		self.logo.setPixmap( QPixmap( ":/transformationTools/icons/faunalia_logo.png" ) )

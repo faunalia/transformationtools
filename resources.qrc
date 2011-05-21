@@ -1,3 +1,5 @@
 <RCC>
-    <qresource prefix="/transformationTool" />
+    <qresource prefix="/transformationTools">
+        <file>icons/faunalia_logo.png</file>
+    </qresource>
 </RCC>

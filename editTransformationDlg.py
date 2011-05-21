@@ -1,8 +1,30 @@
+# -*- coding: utf-8 -*-
+
+"""
+/***************************************************************************
+Name                 : Transformation tools
+Description          : Help to use grids and towgs84 to transform a vector/raster
+Date                 : April 16, 2011 
+copyright            : (C) 2011 by Giuseppe Sucameli (Faunalia)
+email                : brush.tyler@gmail.com
+
+ ***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
+"""
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from ui.editTransformation_ui import Ui_Dialog
-from transformation import Transformation
+from transformations import Transformation
 
 class EditTransformationDlg(QDialog, Ui_Dialog):
 	
@@ -48,8 +70,8 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 
 		fix_string = lambda x: QString(x) if x != None else QString()
 		self.nameEdit.setText( fix_string(self.transformation.name) )
-		self.inputCrsEdit.setText( fix_string(self.transformation.inCrs) )
-		self.outputCrsEdit.setText( fix_string(self.transformation.outCrs) )
+		self.inputCrsEdit.setText( fix_string(self.transformation.incrs) )
+		self.outputCrsEdit.setText( fix_string(self.transformation.outcrs) )
 
 		if self.transformation.towgs84 != None:
 			self.towgs84Radio.setChecked(True)
@@ -67,8 +89,8 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		self.extentGroup.setChecked( self.transformation.extent != None )
 		self.extentSelector.setExtent( self.transformation.extent )
 		
-		self.inputCustomCrsNameEdit.setText( fix_string(self.transformation.inCustomCrsName) )
-		self.outputCustomCrsNameEdit.setText( fix_string(self.transformation.outCustomCrsName) )
+		self.inputCustomCrsNameEdit.setText( fix_string(self.transformation.newincrsname) )
+		self.outputCustomCrsNameEdit.setText( fix_string(self.transformation.newoutcrsname) )
 
 	def getPathToGrids(self):
 		settings = QSettings()
@@ -104,38 +126,34 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		invalid = invalid or ( self.gridRadio.isChecked() and self.gridCombo.currentIndex() < 0 and self.gridCombo.currentText().isEmpty() )
 		invalid = invalid or ( self.towgs84Radio.isChecked() and self.towgs84Edit.text().isEmpty() )
 		invalid = invalid or ( self.inputCustomCrsNameEdit.text().isEmpty() or self.outputCustomCrsNameEdit.text().isEmpty() )
-
 		if invalid:
 			QMessageBox.warning(self, self.tr(u"Some required field is empty"), self.tr(u"You must fill all fields to continue.") )
 			return
 
-		if self.nameEdit.text() != self.transformation.name:
-			# don't overwrite different transformation with the same name
-			if Transformation.exists( self.nameEdit.text() ):
-				QMessageBox.warning(self, self.tr(u"Name exists"), self.tr(u"%s exists yet, use a different transformation name." % self.nameEdit.text()) )
-				return
+		# don't overwrite different transformation with the same name
+		#if self.nameEdit.text() != self.transformation.name and Transformation.exists( self.nameEdit.text() ):
+		#	QMessageBox.warning(self, self.tr(u"Name exists"), self.tr(u"%s exists yet, use a different transformation name." % self.nameEdit.text()) )
+		#	return
 
-		grid = None
+		self.transformation.name = self.nameEdit.text()
+
 		if self.gridRadio.isChecked():
 			index = self.gridCombo.currentIndex()
 			text = self.gridCombo.currentText()
 			if index < 0 or text != self.gridCombo.itemText( index ):
-				grid = text
+				self.transformation.grid = text
 			else:
-				grid = self.gridCombo.itemData( index )
+				self.transformation.grid = self.gridCombo.itemData( index ).toString()
+		else:
+			self.transformation.grid = None
 
-		towgs84 = None
-		if self.towgs84Radio.isChecked():
-			towgs84 = self.towgs84Edit.text()
+		self.transformation.towgs84 = self.towgs84Edit.text() if self.towgs84Radio.isChecked() else None
+		self.transformation.extent = self.extentSelector.getExtent() if self.extentGroup.isChecked() else None
 
-		extent = None
-		if self.extentGroup.isChecked():
-			extent = self.extentSelector.getExtent()
-
-		params = [self.nameEdit.text(), self.inputCrsEdit.text(), self.outputCrsEdit.text(), 
-				grid, towgs84, extent, self.inputCustomCrsNameEdit.text(), self.outputCustomCrsNameEdit.text(), 
-				self.transformation.enabled]
-		self.transformation.setPropValues( params )
+		self.transformation.incrs = self.inputCrsEdit.text()
+		self.transformation.outcrs = self.outputCrsEdit.text()
+		self.transformation.newincrsname = self.inputCustomCrsNameEdit.text()
+		self.transformation.newoutcrsname = self.outputCustomCrsNameEdit.text()
 
 		self.onClosing()
 		return QDialog.accept(self)

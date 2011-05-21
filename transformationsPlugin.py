@@ -2,8 +2,8 @@
 
 """
 /***************************************************************************
-Name                 : Transformations
-Description          : Allow to use grids and towgs84 to transform a vector/raster
+Name                 : Transformation tools
+Description          : Help to use grids and towgs84 to transform a vector/raster
 Date                 : April 16, 2011 
 copyright            : (C) 2011 by Giuseppe Sucameli (Faunalia)
 email                : brush.tyler@gmail.com
@@ -26,7 +26,7 @@ from PyQt4.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
-#import resources
+import resources_rc
 
 class TransformationsPlugin:
 
@@ -38,7 +38,7 @@ class TransformationsPlugin:
 		self.managerAction = QAction(QIcon(), "Transformation Manager", self.iface.mainWindow())
 		QObject.connect(self.managerAction, SIGNAL("triggered()"), self.runManager)
 
-		self.transformAction = QAction(QIcon(), "Transform", self.iface.mainWindow())
+		self.transformAction = QAction(QIcon(), "Transform Tool", self.iface.mainWindow())
 		QObject.connect(self.transformAction, SIGNAL("triggered()"), self.runTransform)
 
 		self.aboutAction = QAction("About", self.iface.mainWindow())
@@ -46,11 +46,11 @@ class TransformationsPlugin:
 
 
 		# Add to the plugin menu and toolbar
-		self.iface.addPluginToMenu("Transformation Manager", self.managerAction)
-		#self.iface.addPluginToMenu("Transformation Manager", self.transformAction)
-		self.iface.addPluginToMenu("Transformation Manager", self.aboutAction)
-		self.iface.addToolBarIcon(self.transformAction)
+		self.iface.addPluginToMenu("Transformation Tools", self.managerAction)
+		#self.iface.addPluginToMenu("Transformation ", self.transformAction)
+		self.iface.addPluginToMenu("Transformation Tools", self.aboutAction)
 		self.iface.addToolBarIcon(self.managerAction)
+		#self.iface.addToolBarIcon(self.transformAction)
 
 		QObject.connect(QgsMapLayerRegistry.instance(), SIGNAL("layerWasAdded(QgsMapLayer *)"), self.setTransformation)
 
@@ -58,11 +58,11 @@ class TransformationsPlugin:
 		QObject.disconnect(QgsMapLayerRegistry.instance(), SIGNAL("layerWasAdded(QgsMapLayer *)"), self.setTransformation)
 
 		# Remove the plugin
-		self.iface.removePluginMenu("Transformation Manager", self.managerAction)
-		#self.iface.removePluginMenu("Transformation Manager", self.transformAction)
-		self.iface.removePluginMenu("Transformation Manager", self.aboutAction)
-		self.iface.removeToolBarIcon(self.transformAction)
+		self.iface.removePluginMenu("Transformation Tools", self.managerAction)
+		#self.iface.removePluginMenu("Transformation Tools", self.transformAction)
+		self.iface.removePluginMenu("Transformation Tools", self.aboutAction)
 		self.iface.removeToolBarIcon(self.managerAction)
+		#self.iface.removeToolBarIcon(self.transformAction)
 
 	def about(self):
 		from dlgAbout import DlgAbout
@@ -78,12 +78,18 @@ class TransformationsPlugin:
 		pass
 
 	def setTransformation(self, layer):
-		prevRender = self.iface.mapCanvas().renderFlag()
+		canvas = self.iface.mapCanvas()
+		prevRender = canvas.renderFlag()
 		try:
-			self.iface.mapCanvas().setRenderFlag(False)
+			canvas.setRenderFlag(False)
 			from selectTransformationDlg import SelectTransformationDlg
-			dlg = SelectTransformationDlg(self.iface, layer, self.iface.mainWindow())
-			dlg.exec_()
+			dlg = SelectTransformationDlg(layer.crs(), canvas.mapRenderer().destinationCrs(), self.iface.mainWindow())
+			if dlg.exec_():
+				t = dlg.getSelected()
+				canvas.mapRenderer().setDestinationCrs( t.getOutputCustomCrs() )
+				layer.setCrs( t.getInputCustomCrs() )
+			dlg.deleteLater()
+			del dlg
 		finally:
-			self.iface.mapCanvas().setRenderFlag(prevRender)
+			canvas.setRenderFlag(prevRender)
 

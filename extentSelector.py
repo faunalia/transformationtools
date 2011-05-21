@@ -1,4 +1,24 @@
 # -*- coding: utf-8 -*-
+
+"""
+/***************************************************************************
+Name			: GdalTools
+Description		: Integrate gdal tools into qgis
+Date			: 08/Jul/10
+copyright		: (C) 2010 by Giuseppe Sucameli (Faunalia)
+email			: sucameli@faunalia.it
+ ***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
+"""
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import *
@@ -174,3 +194,4 @@ class RectangleMapTool(QgsMapToolEmitPoint):
   def deactivate(self):
       QgsMapTool.deactivate(self)
       self.emit(SIGNAL("deactivated()"))
+
