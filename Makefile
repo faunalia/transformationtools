@@ -13,7 +13,7 @@ resources: $(RC_FILES)
 $(UI_FILES): %_ui.py: %.ui
 	pyuic4 -o $@ $<
 	
-${RC_FILES}: %_rc.py %.qrc
+$(RC_FILES): %_rc.py: %.qrc
 	pyrcc4 -o $@ $<
 
 
