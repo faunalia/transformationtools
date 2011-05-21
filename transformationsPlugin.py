@@ -35,7 +35,7 @@ class TransformationsPlugin:
 		self.iface = iface
 		
 	def initGui(self):
-		self.managerAction = QAction(QIcon(), "Transformation Manager", self.iface.mainWindow())
+		self.managerAction = QAction(QIcon(":/transformationTools/icons/transformation_manager.png"), "Transformation Manager", self.iface.mainWindow())
 		QObject.connect(self.managerAction, SIGNAL("triggered()"), self.runManager)
 
 		self.transformAction = QAction(QIcon(), "Transform Tool", self.iface.mainWindow())
