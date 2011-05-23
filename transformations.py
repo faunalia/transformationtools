@@ -70,7 +70,8 @@ class Transformation:
 		return Transformation.__connection.cursor()
 
 	@staticmethod
-	def __execute(sql, params=None, cursor=None, autoCommit=True):
+	def __execute(sql, params=None, cursor=None, commitWhenCursor=False):
+		autoCommit = cursor == None or commitWhenCursor
 		if cursor == None:
 			cursor = Transformation.__getCursor()
 			if cursor == None:
@@ -130,16 +131,13 @@ class Transformation:
 		return True
 		
 	def saveData(self):
-		if self.name == None:
-			return False
+		# this will add both CRSs to the tbl_srs table (done by QgsCoordinateReferenceSystem)
+		newinproj = self.getInputCustomCrs().toProj4()
+		newoutproj = self.getOutputCustomCrs().toProj4()
 
 		cursor = Transformation.__getCursor()
 		if cursor == None:
 			return False
-
-		# this will add both CRSs to the tbl_srs table (done by QgsCoordinateReferenceSystem)
-		newinproj = self.getInputCustomCrs().toProj4()
-		newoutproj = self.getOutputCustomCrs().toProj4()
 
 		# don't take care about the id field, convert all params to strings
 		fields = Transformation.fields[1:]
@@ -147,63 +145,74 @@ class Transformation:
 		if self.id == None:
 			# insert as new transformation
 			sql = u"INSERT INTO tbl_transformation (%s) VALUES (%s)" % ( ','.join(fields), ','.join(['?']*len(fields)) )
-			Transformation.__execute( sql, params, cursor, False )
+			Transformation.__execute( sql, params, cursor )
 			self.id = cursor.lastrowid
 		else:
 			# update the transformation
 			sql = u"UPDATE tbl_transformation SET %s WHERE id=?" % ( '=?,'.join(fields) + '=?' )
 			params.append( self.id )
-			Transformation.__execute( sql, params, cursor, False )
+			Transformation.__execute( sql, params, cursor )
 
-		# update the input custom CRS
+		# update the both input and output custom CRS
 		params = [ unicode(newinproj) ]
 		sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
-		Transformation.__execute( sql, params, cursor, False )
-		params = [ unicode(self.newincrsname), unicode(cursor.fetchone()[0]) ]
-		sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
-		Transformation.__execute( sql, params, cursor, False )
+		Transformation.__execute( sql, params, cursor )
+		row = cursor.fetchone()
+		if row != None:
+			qWarning(">>> NO input crs record found??")
+			params = [ unicode(self.newincrsname), unicode(row[0]) ]
+			sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
+			Transformation.__execute( sql, params, cursor )
 
-		# update the output custom CRS
+
 		params = [ unicode(newoutproj) ]
 		sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
-		Transformation.__execute( sql, params, cursor, False )
-		params = [ unicode(self.newoutcrsname), unicode(cursor.fetchone()[0]) ]
-		sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
 		Transformation.__execute( sql, params, cursor )
+		row = cursor.fetchone()
+		if row != None:
+			qWarning(">>> NO output crs record found??")
+			params = [ unicode(self.newoutcrsname), unicode(row[0]) ]
+			sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
+			Transformation.__execute( sql, params, cursor )
 
+		Transformation.__connection.commit()
 		return True
 
 	def deleteData(self):
 		if self.id == None:
 			return False
 
-		cursor = Transformation.__getCursor()
-		if cursor == None:
-			return False
-
 		# this will add both CRSs to the tbl_srs table (done by QgsCoordinateReferenceSystem)
 		newinproj = self.getInputCustomCrs().toProj4()
 		newoutproj = self.getOutputCustomCrs().toProj4()
 
+		cursor = Transformation.__getCursor()
+		if cursor == None:
+			return False
+
 		# delete the input custom CRS
 		params = [ unicode(newinproj) ]
 		sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
-		Transformation.__execute( sql, params, cursor, False )
-		params = [ unicode(cursor.fetchone()[0]) ]
-		sql = u"DELETE FROM tbl_srs WHERE srs_id=?"
-		Transformation.__execute( sql, params, cursor, False )
+		Transformation.__execute( sql, params, cursor )
+		row = cursor.fetchone()
+		if row != None:
+			params = [ unicode(row[0]) ]
+			sql = u"DELETE FROM tbl_srs WHERE srs_id=?"
+			Transformation.__execute( sql, params, cursor )
 
 		# delete the output custom CRS
 		params = [ unicode(newoutproj) ]
 		sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
-		Transformation.__execute( sql, params, cursor, False )
-		params = [ unicode(cursor.fetchone()[0]) ]
-		sql = u"DELETE FROM tbl_srs WHERE srs_id=?"
-		Transformation.__execute( sql, params, cursor, False )
+		Transformation.__execute( sql, params, cursor )
+		if row != None:
+			params = [ unicode(row[0]) ]
+			sql = u"DELETE FROM tbl_srs WHERE srs_id=?"
+			Transformation.__execute( sql, params, cursor )
 
 		sql = u"DELETE FROM tbl_transformation WHERE id=?"
 		Transformation.__execute( sql, [self.id], cursor )
 
+		Transformation.__connection.commit()
 		return True
 
 
@@ -214,7 +223,7 @@ class Transformation:
 			return
 
 		sql = u"SELECT count(*) > 0 FROM tbl_transformation WHERE id=?"
-		ret = Transformation.__execute( sql, [ID], cursor )
+		ret = Transformation.__execute( sql, [ID], cursor, True )
 		if not ret: return
 		return cursor.fetchone()[0] == 't'
 
@@ -275,16 +284,37 @@ class Transformation:
 	def getInputCustomCrs(self):
 		crs = self.__getInputCrs()
 		if self.useGrid():
-			crs.createFromProj4( "%s +nadgrids=%s +wktext" % (crs.toProj4(), self.grid) )
+			proj4 = self.__removeFromProj4(crs.toProj4(), ['+towgs84'])
+			proj4 = self.__addToProj4(proj4, {'+nadgrids':self.grid, '+wktext':None})
+			crs.createFromProj4( proj4 )
 		elif self.useTowgs84():
-			crs.createFromProj4( "%s +towgs84=%s +wktext" % (crs.toProj4(), self.towgs84) )
+			proj4 = self.__addToProj4(crs.toProj4(), {'+towgs84':self.towgs84, '+wktext':None})
+			crs.createFromProj4( proj4 )
 		return crs
 
 	def getOutputCustomCrs(self):
 		crs = self.__getOutputCrs()
 		if self.useGrid() or self.useTowgs84():
-			crs.createFromProj4( "%s +towgs84=0,0,0 +wktext" % crs.toProj4() )
+			proj4 = self.__addToProj4(crs.toProj4(), {'+towgs84':'0,0,0', '+wktext':None})
+			crs.createFromProj4( proj4 )
 		return crs
+
+	def __addToProj4(self, proj4, params=None):
+		if params == None:
+			return proj4
+		proj4 = self.__removeFromProj4(proj4, params.keys())
+		for k, v in params.iteritems():
+			newstr = " %s=%s" % (k,v) if v != None else " %s" % k
+			proj4 = QString(proj4).append( newstr )
+		return proj4
+
+	def __removeFromProj4(self, proj4, params=None):
+		if params == None:
+			return proj4
+		for k in params:
+			rxstr = "\s%s(?:\=\S+)?%s"  % ( QRegExp.escape(k), '\\b' )
+			proj4 = QString(proj4).remove( QRegExp(rxstr) )
+		return proj4
 
 
 # create the table on qgis.db if not exists yet

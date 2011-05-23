@@ -83,11 +83,14 @@ class TransformationsPlugin:
 		try:
 			canvas.setRenderFlag(False)
 			from selectTransformationDlg import SelectTransformationDlg
-			dlg = SelectTransformationDlg(layer.crs(), canvas.mapRenderer().destinationCrs(), self.iface.mainWindow())
+			layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
+			mapRenderer = canvas.mapRenderer()
+			mapCrs = (mapRenderer.destinationCrs if hasattr(mapRenderer, 'destinationCrs') else mapRenderer.destinationSrs)()
+			dlg = SelectTransformationDlg(layerCrs, mapCrs, self.iface.mainWindow())
 			if dlg.exec_():
 				t = dlg.getSelected()
-				canvas.mapRenderer().setDestinationCrs( t.getOutputCustomCrs() )
-				layer.setCrs( t.getInputCustomCrs() )
+				(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)(t.getOutputCustomCrs())
+				layer.setCrs(t.getInputCustomCrs())
 			dlg.deleteLater()
 			del dlg
 		finally:

@@ -30,7 +30,7 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 	
 	def __init__(self, iface, parent=None):
 		QDialog.__init__(self, parent)
-		self.setWindowFlags( Qt.Window | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint & ~Qt.WindowMinimizeButtonHint )
+		#self.setWindowFlags( Qt.Window | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint | Qt.WindowMaximizeButtonHint & ~Qt.WindowMinimizeButtonHint )
 		self.setAttribute(Qt.WA_DeleteOnClose)
 		self.iface = iface
 		self.setupUi(self)
