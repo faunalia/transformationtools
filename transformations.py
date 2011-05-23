@@ -159,10 +159,11 @@ class Transformation:
 		Transformation.__execute( sql, params, cursor )
 		row = cursor.fetchone()
 		if row != None:
-			qWarning(">>> NO input crs record found??")
 			params = [ unicode(self.newincrsname), unicode(row[0]) ]
 			sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
 			Transformation.__execute( sql, params, cursor )
+		else:
+			qWarning(u">>> NO input crs record found??")
 
 
 		params = [ unicode(newoutproj) ]
@@ -170,10 +171,11 @@ class Transformation:
 		Transformation.__execute( sql, params, cursor )
 		row = cursor.fetchone()
 		if row != None:
-			qWarning(">>> NO output crs record found??")
 			params = [ unicode(self.newoutcrsname), unicode(row[0]) ]
 			sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
 			Transformation.__execute( sql, params, cursor )
+		else:
+			qWarning(u">>> NO output crs record found??")
 
 		Transformation.__connection.commit()
 		return True
@@ -276,10 +278,18 @@ class Transformation:
 		return transformations
 
 	def __getInputCrs(self):
-		return QgsCoordinateReferenceSystem( self.incrs )
+		crs = QgsCoordinateReferenceSystem( self.incrs )
+		if not crs.isValid():
+			if not crs.createFromProj4( self.incrs ):
+				qWarning( u"unable to create the output CRS from '%s'" % self.incrs )
+		return crs
 
 	def __getOutputCrs(self):
-		return QgsCoordinateReferenceSystem( self.outcrs )
+		crs = QgsCoordinateReferenceSystem( self.outcrs )
+		if not crs.isValid():
+			if not crs.createFromProj4( self.outcrs ):
+				qWarning( u"unable to create the output CRS from '%s'" % self.outcrs )
+		return crs
 
 	def getInputCustomCrs(self):
 		crs = self.__getInputCrs()
@@ -288,14 +298,16 @@ class Transformation:
 			proj4 = self.__addToProj4(proj4, {'+nadgrids':self.grid, '+wktext':None})
 			crs.createFromProj4( proj4 )
 		elif self.useTowgs84():
-			proj4 = self.__addToProj4(crs.toProj4(), {'+towgs84':self.towgs84, '+wktext':None})
+			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids'])
+			proj4 = self.__addToProj4(proj4, {'+towgs84':self.towgs84, '+wktext':None})
 			crs.createFromProj4( proj4 )
 		return crs
 
 	def getOutputCustomCrs(self):
 		crs = self.__getOutputCrs()
 		if self.useGrid() or self.useTowgs84():
-			proj4 = self.__addToProj4(crs.toProj4(), {'+towgs84':'0,0,0', '+wktext':None})
+			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids'])
+			proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
 			crs.createFromProj4( proj4 )
 		return crs
 

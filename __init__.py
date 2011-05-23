@@ -3,7 +3,7 @@
 """
 /***************************************************************************
 Name                 : Transformation tools
-Description          : Help to use grids and towgs84 to transform a vector/raster
+Description          : Help using NTv2 grids or towgs84 parameters to transform -or reproject on the fly- vectors and rasters
 Date                 : April 16, 2011 
 copyright            : (C) 2011 by Giuseppe Sucameli (Faunalia)
 email                : brush.tyler@gmail.com
@@ -24,10 +24,10 @@ def name():
 	return "Transformation Tools"
 
 def description():
-	return "Help to use grids and towgs84 to transform a vector/raster"
+	return "Help using NTv2 grids or towgs84 parameters to transform -or reproject on the fly- vectors and rasters"
 
 def version():
-	return "0.0.1"
+	return "0.0.3"
 
 def qgisMinimumVersion():
 	return "1.6.0"
