@@ -35,7 +35,7 @@ class TransformationsPlugin:
 		self.iface = iface
 		
 	def initGui(self):
-		self.managerAction = QAction(QIcon(":/transformationTools/icons/transformation_manager.png"), "Transformation Manager", self.iface.mainWindow())
+		self.managerAction = QAction(QIcon(":/icons/transformation_manager.png"), "Transformation Manager", self.iface.mainWindow())
 		QObject.connect(self.managerAction, SIGNAL("triggered()"), self.runManager)
 
 		self.transformAction = QAction(QIcon(), "Transform Tool", self.iface.mainWindow())
@@ -51,7 +51,6 @@ class TransformationsPlugin:
 		self.iface.addPluginToMenu("Transformation Tools", self.aboutAction)
 		self.iface.addToolBarIcon(self.managerAction)
 		#self.iface.addToolBarIcon(self.transformAction)
-
 		QObject.connect(QgsMapLayerRegistry.instance(), SIGNAL("layerWasAdded(QgsMapLayer *)"), self.setTransformation)
 
 	def unload(self):
@@ -65,7 +64,7 @@ class TransformationsPlugin:
 		#self.iface.removeToolBarIcon(self.transformAction)
 
 	def about(self):
-		from dlgAbout import DlgAbout
+		from DlgAbout import DlgAbout
 		DlgAbout(self.iface.mainWindow()).exec_()
 
 
