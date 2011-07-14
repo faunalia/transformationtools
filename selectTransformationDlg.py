@@ -26,41 +26,49 @@ from PyQt4.QtGui import *
 from transformationsTableModel import FilteredTransformationsTableModel
 from ui.selectTransformation_ui import Ui_Dialog
 
+import resources_rc
+
 class SelectTransformationDlg(QDialog, Ui_Dialog):
 
 	APPLY_WITHOUT_ASK = []
 	
-	def __init__(self, inCrs, outCrs, parent=None):
+	def __init__(self, layerName, layerCrs, mapCrs, parent=None):
 		QDialog.__init__(self, parent)
 		self.setupUi(self)
+		self.layerNameLbl.setText( layerName )
+		self.layerCrsLbl.setText( layerCrs.authid() )
+		self.layerCrsLbl.setToolTip( layerCrs.toProj4() )
+		self.layerCrsToolTip.setPixmap( QPixmap(':/plugins/TransformationTools/icons/tooltip.png') )
+		self.layerCrsToolTip.setToolTip( layerCrs.toProj4() )
 
 		# if only one transformation, use it without ask for confirmation
 		self.useIfOne = False
 
-		self.table.setModel( FilteredTransformationsTableModel(inCrs, outCrs, self, True, False) )
+		self.table.setModel( FilteredTransformationsTableModel(layerCrs, mapCrs, self, True, False) )
 		self.table.setTextElideMode( Qt.ElideMiddle )
 
 		self.connect(self.table.selectionModel(), SIGNAL("selectionChanged(const QItemSelection&, const QItemSelection&)"), self.itemChanged)
 		self.connect(self.table, SIGNAL("doubleClicked(const QModelIndex&)"), self.accept)
 		self.itemChanged()
 
-	def exec_(self):
+	def exec_(self, forceDialog=False):
 		if self.table.model().rowCount() <= 0:
 			return False
 
-		if self.useIfOne and self.table.model().rowCount() == 1:
-			self.table.selectRow( 0 )
-			return True
+		if not forceDialog:
+			if self.useIfOne and self.table.model().rowCount() == 1:
+				self.table.selectRow( 0 )
+				return True
 
-		if self.applyAutomatically():
-			return True
+			if self.applyAutomatically():
+				return True
 
 		return QDialog.exec_(self)
 
 	def applyAutomatically(self):
 		for row in range(self.table.model().rowCount()):
 			t = self.table.model().getAtRow( row )
-			if not t.id in SelectTransformationDlg.APPLY_WITHOUT_ASK:
+			if not t in SelectTransformationDlg.APPLY_WITHOUT_ASK:
 				continue
 			self.table.selectRow( row )
 			return True
@@ -71,6 +79,10 @@ class SelectTransformationDlg(QDialog, Ui_Dialog):
 		if not index.isValid():
 			return
 		return self.table.model().getAtRow( index.row() )
+
+	def getCrss(self):
+		t, isInverse = self.getSelected()
+		return t.getInputCustomCrs( isInverse ), t.getOutputCustomCrs( isInverse )
 
 	def itemChanged(self):
 		rows = self.table.selectionModel().selectedRows()
@@ -87,7 +99,7 @@ class SelectTransformationDlg(QDialog, Ui_Dialog):
 			return False
 
 		if self.applyToNext.isChecked():
-			SelectTransformationDlg.APPLY_WITHOUT_ASK.append( t.id )
+			SelectTransformationDlg.APPLY_WITHOUT_ASK.insert( 0, t )
 
 		return QDialog.accept(self)
 

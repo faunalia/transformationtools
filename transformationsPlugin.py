@@ -35,7 +35,7 @@ class TransformationsPlugin:
 		self.iface = iface
 		
 	def initGui(self):
-		self.managerAction = QAction(QIcon(":/icons/transformation_manager.png"), "Transformation Manager", self.iface.mainWindow())
+		self.managerAction = QAction(QIcon(":/plugins/TransformationTools/icons/transformation_manager.png"), "Transformation Manager", self.iface.mainWindow())
 		QObject.connect(self.managerAction, SIGNAL("triggered()"), self.runManager)
 
 		self.transformAction = QAction(QIcon(), "Transform Tool", self.iface.mainWindow())
@@ -85,11 +85,11 @@ class TransformationsPlugin:
 			layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
 			mapRenderer = canvas.mapRenderer()
 			mapCrs = (mapRenderer.destinationCrs if hasattr(mapRenderer, 'destinationCrs') else mapRenderer.destinationSrs)()
-			dlg = SelectTransformationDlg(layerCrs, mapCrs, self.iface.mainWindow())
+			dlg = SelectTransformationDlg(layer.name(), layerCrs, mapCrs, self.iface.mainWindow())
 			if dlg.exec_():
-				t = dlg.getSelected()
-				(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)(t.getOutputCustomCrs())
-				layer.setCrs(t.getInputCustomCrs())
+				layerCrs, mapCrs = dlg.getCrss()
+				(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)( mapCrs )
+				layer.setCrs( layerCrs )
 			dlg.deleteLater()
 			del dlg
 		finally:

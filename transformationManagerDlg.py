@@ -44,6 +44,7 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 		self.connect(self.newBtn, SIGNAL("clicked()"), self.createNew)
 		self.connect(self.editBtn, SIGNAL("clicked()"), self.editItem)
 		self.connect(self.deleteBtn, SIGNAL("clicked()"), self.deleteItem)
+		self.connect(self.applyBtn, SIGNAL("clicked()"), self.applyTransformation)
 		self.itemChanged()
 
 	def createNew(self):
@@ -78,6 +79,39 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 		t.deleteData()
 		self.refreshTable()
 
+	def applyTransformation(self, index=None):
+		if index == None:
+			index = self.table.currentIndex()
+		if not index.isValid():
+			return
+		t = self.table.model().getAtRow( index.row() )
+
+		canvas = self.iface.mapCanvas()
+		prevRender = canvas.renderFlag()
+		try:
+			canvas.setRenderFlag(False)
+			mapRenderer = canvas.mapRenderer()
+			mapCrs = (mapRenderer.destinationCrs if hasattr(mapRenderer, 'destinationCrs') else mapRenderer.destinationSrs)()
+
+			from selectTransformationDlg import SelectTransformationDlg
+			from .transformations import Transformation
+
+			# show the dialog if the current transformation can be applyied to a loaded layer
+			for layer in self.iface.legendInterface().layers():
+				layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
+				# get valid transformations for the layer 
+				if t.isApplicableTo(layerCrs, mapCrs) or t.isApplicableTo(mapCrs,layerCrs):
+					dlg = SelectTransformationDlg(layer.name(), layerCrs, mapCrs, self.iface.mainWindow())
+					if dlg.exec_():
+						layerCrs, mapCrs = dlg.getCrss()
+						(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)( mapCrs )
+						layer.setCrs( layerCrs )
+					dlg.deleteLater()
+					del dlg
+		finally:
+			canvas.setRenderFlag(prevRender)
+
+
 	def itemChanged(self):
 		rows = self.table.selectionModel().selectedRows()
 		enable = len(rows) > 0
@@ -85,6 +119,7 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 			self.table.setCurrentIndex( rows[0] )
 		self.editBtn.setEnabled( enable )
 		self.deleteBtn.setEnabled( enable )
+		self.applyBtn.setEnabled( enable )
 
 	def refreshTable(self):
 		self.table.model().reloadData()

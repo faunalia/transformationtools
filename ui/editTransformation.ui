@@ -7,65 +7,65 @@
     <x>0</x>
     <y>0</y>
     <width>579</width>
-    <height>449</height>
+    <height>370</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Setup a transformation</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
+  <layout class="QGridLayout" name="gridLayout_4">
+   <item row="0" column="0" colspan="3">
     <widget class="QLabel" name="label">
      <property name="text">
       <string>Transformation name</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="1" colspan="2">
+   <item row="0" column="3" colspan="3">
     <widget class="QLineEdit" name="nameEdit"/>
    </item>
-   <item row="1" column="0">
+   <item row="1" column="0" colspan="4">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Input CRS</string>
+      <string>System_From</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
+   <item row="1" column="4">
     <widget class="QLineEdit" name="inputCrsEdit"/>
    </item>
-   <item row="1" column="2">
+   <item row="1" column="5" rowspan="2">
     <widget class="QToolButton" name="selectInputCrsBtn">
      <property name="text">
       <string>...</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="2" column="0" rowspan="2" colspan="4">
     <widget class="QLabel" name="label_3">
      <property name="text">
-      <string>Output CRS</string>
+      <string>System_To</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="2" column="4" rowspan="2">
     <widget class="QLineEdit" name="outputCrsEdit"/>
    </item>
-   <item row="2" column="2">
+   <item row="3" column="5">
     <widget class="QToolButton" name="selectOutputCrsBtn">
      <property name="text">
       <string>...</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="3">
-    <widget class="QGroupBox" name="groupBox">
+   <item row="4" column="0" colspan="6">
+    <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
-      <string>Transformation params</string>
+      <string>Grid or params</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_2">
+     <layout class="QGridLayout" name="gridLayout_3">
       <item row="0" column="0">
-       <widget class="QRadioButton" name="gridRadio">
+       <widget class="QRadioButton" name="inGridRadio">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -81,7 +81,7 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QComboBox" name="gridCombo">
+       <widget class="QComboBox" name="inGridCombo">
         <property name="editable">
          <bool>true</bool>
         </property>
@@ -93,26 +93,6 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QRadioButton" name="towgs84Radio">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>towgs84</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1" colspan="2">
-       <widget class="QLineEdit" name="towgs84Edit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="2">
        <widget class="QToolButton" name="selectGridBtn">
         <property name="text">
@@ -120,46 +100,93 @@
         </property>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="5" column="0" colspan="3">
-    <widget class="QGroupBox" name="groupBox_2">
-     <property name="title">
-      <string>Generated Custom CRSs</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
+      <item row="1" column="0">
+       <widget class="QRadioButton" name="inTowgs84Radio">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
-         <string>Input custom CRS name</string>
+         <string>towgs84 params</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="inputCustomCrsNameEdit"/>
+      <item row="1" column="1" colspan="2">
+       <widget class="QLineEdit" name="inTowgs84Edit">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
       </item>
+      <item row="3" column="0" colspan="3">
+       <widget class="QGroupBox" name="extentGroup">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="title">
+         <string>Validity extent</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="0" column="0">
+          <widget class="ExtentSelector" name="extentSelector" native="true"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="3">
+       <widget class="QLineEdit" name="outTowgs84Edit">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="6">
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Generated custom CRSs</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
       <item row="1" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>Output custom CRS name</string>
+         <string>Custom CRS B name</string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
        <widget class="QLineEdit" name="outputCustomCrsNameEdit"/>
       </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Custom CRS A name</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="inputCustomCrsNameEdit"/>
+      </item>
      </layout>
     </widget>
    </item>
-   <item row="7" column="0" colspan="3">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0">
+   <item row="6" column="0" colspan="2">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -172,22 +199,11 @@
      </property>
     </spacer>
    </item>
-   <item row="4" column="0" colspan="3">
-    <widget class="QGroupBox" name="extentGroup">
-     <property name="title">
-      <string>Extent</string>
+   <item row="7" column="0" colspan="6">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
-     <property name="checkable">
-      <bool>true</bool>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
-       <widget class="ExtentSelector" name="extentSelector" native="true"/>
-      </item>
-     </layout>
     </widget>
    </item>
   </layout>
@@ -235,9 +251,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>towgs84Radio</sender>
+   <sender>inTowgs84Radio</sender>
    <signal>toggled(bool)</signal>
-   <receiver>towgs84Edit</receiver>
+   <receiver>inTowgs84Edit</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -251,9 +267,9 @@
    </hints>
   </connection>
   <connection>
-   <sender>gridRadio</sender>
+   <sender>inGridRadio</sender>
    <signal>toggled(bool)</signal>
-   <receiver>gridCombo</receiver>
+   <receiver>inGridCombo</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">

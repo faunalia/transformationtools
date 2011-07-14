@@ -32,7 +32,7 @@ class TransformationsTableModel(QAbstractTableModel):
 
 	def __init__(self, parent=None, enabledOnly=False, manageEnabled=True):
 		QAbstractTableModel.__init__(self, parent)
-		self.header = ( "Name", "Input CRS", "Output CRS", "Params" )
+		self.header = ( "Name", "CRS A", "CRS B", "Grid or params" )
 
 		self.manageEnabled = manageEnabled
 		self.enabledOnly = enabledOnly
@@ -68,7 +68,7 @@ class TransformationsTableModel(QAbstractTableModel):
 	def data(self, index, role):
 		if not index.isValid():
 			return QVariant()
-		t = self.getAtRow( index.row() )
+		t = self.transformations[ index.row() ]
 
 		if not self.enabledOnly and role == Qt.CheckStateRole and index.column() == 0:
 			return Qt.Checked if t.enabled else Qt.Unchecked
@@ -78,14 +78,14 @@ class TransformationsTableModel(QAbstractTableModel):
 			if index.column() == 0:
 				val = t.name
 			elif index.column() == 1:
-				val = t.incrs
+				val = t.inCrs
 			elif index.column() == 2:
-				val = t.outcrs
+				val = t.outCrs
 			elif index.column() == 3:
 				if t.useTowgs84():
-					val = "towgs84=%s" % t.towgs84
+					val = "towgs84=%s" % t.inTowgs84
 				elif t.useGrid():
-					val = "grid=%s" % t.grid
+					val = "grid=%s" % t.inGrid
 			return QVariant(val) if val != None else QVariant()
 
 		return QVariant()
@@ -94,7 +94,7 @@ class TransformationsTableModel(QAbstractTableModel):
 		if not index.isValid():
 			return False
 		if self.manageEnabled and role == Qt.CheckStateRole:
-			t = self.getAtRow( index.row() )
+			t = self.transformations[ index.row() ]
 			t.enabled = value == Qt.Checked
 			t.saveData()
 			return True
@@ -106,12 +106,17 @@ class TransformationsTableModel(QAbstractTableModel):
 		return QVariant()
 
 class FilteredTransformationsTableModel(TransformationsTableModel):
-	def __init__(self, inCrs, outCrs, parent=None, enabledOnly=False, manageEnabled=True):
-		self.inCrs = inCrs
-		self.outCrs = outCrs
+	def __init__(self, crsA, crsB, parent=None, enabledOnly=False, manageEnabled=True):
+		self.crsA = crsA
+		self.crsB = crsB
 		TransformationsTableModel.__init__(self, parent, enabledOnly, manageEnabled)
 
 	def reloadData(self):
-		self.transformations = Transformation.getByCrs(self.inCrs, self.outCrs, self.enabledOnly)
+		res = Transformation.getByCrs(self.crsA, self.crsB, self.enabledOnly, True)
+		self.transformations = map( lambda x: x[0], res )
+		self.isInverse = map( lambda x: x[1], res )
+
 		self.row_count = len(self.transformations)
 
+	def getAtRow(self, row):
+		return self.transformations[row], self.isInverse[row]

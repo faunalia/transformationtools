@@ -68,29 +68,30 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		self.fillGridCombo()
 		self.extentGroup.setChecked( False )
 
-		fix_string = lambda x: QString(x) if x != None else QString()
-		self.nameEdit.setText( fix_string(self.transformation.name) )
-		self.inputCrsEdit.setText( fix_string(self.transformation.incrs) )
-		self.outputCrsEdit.setText( fix_string(self.transformation.outcrs) )
+		to_string = lambda x: QString(x) if x != None else QString()
+		self.nameEdit.setText( to_string(self.transformation.name) )
+		self.inputCrsEdit.setText( to_string(self.transformation.inCrs) )
+		self.outputCrsEdit.setText( to_string(self.transformation.outCrs) )
 
-		if self.transformation.towgs84 != None:
-			self.towgs84Radio.setChecked(True)
-			self.towgs84Edit.setText( fix_string(self.transformation.towgs84) )
+		if self.transformation.inTowgs84 != None:
+			self.inTowgs84Radio.setChecked(True)
+			self.inTowgs84Edit.setText( to_string(self.transformation.inTowgs84) )
 		else:
-			self.gridRadio.setChecked(True)
-			grid = fix_string(self.transformation.grid)
-			index = self.gridCombo.findData( grid )
-			if index < 0 and grid.isEmpty() and self.gridCombo.count() > 0:
+			self.inGridRadio.setChecked(True)
+			grid = to_string(self.transformation.inGrid)
+			index = self.inGridCombo.findData( grid )
+			if index < 0 and grid.isEmpty() and self.inGridCombo.count() > 0:
 				index = 0
-			self.gridCombo.setCurrentIndex( index )
-			if self.gridCombo.currentIndex() < 0:
-				self.gridCombo.setEditText( grid )
+			self.inGridCombo.setCurrentIndex( index )
+			if self.inGridCombo.currentIndex() < 0:
+				self.inGridCombo.setEditText( grid ) 
+		self.outTowgs84Edit.setText( to_string(self.transformation.outTowgs84) )
 
 		self.extentGroup.setChecked( self.transformation.extent != None )
 		self.extentSelector.setExtent( self.transformation.extent )
 		
-		self.inputCustomCrsNameEdit.setText( fix_string(self.transformation.newincrsname) )
-		self.outputCustomCrsNameEdit.setText( fix_string(self.transformation.newoutcrsname) )
+		self.inputCustomCrsNameEdit.setText( to_string(self.transformation.newInCrsName) )
+		self.outputCustomCrsNameEdit.setText( to_string(self.transformation.newOutCrsName) )
 
 	def getPathToGrids(self):
 		settings = QSettings()
@@ -115,16 +116,16 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		gridDir.setFilter( QDir.Files | QDir.NoSymLinks | QDir.NoDotAndDotDot )
 		gridDir.setNameFilters( QStringList() << "*.gsb" )
 
-		self.gridCombo.clear()		
+		self.inGridCombo.clear()		
 		for g in gridDir.entryList():
 			fn = u"%s/%s" % (path, g)
-			self.gridCombo.addItem( g, fn )
+			self.inGridCombo.addItem( g, fn )
 
 	def accept(self):
 		invalid = self.nameEdit.text().isEmpty()
 		invalid = invalid or ( self.inputCrsEdit.text().isEmpty() or self.outputCrsEdit.text().isEmpty() )
-		invalid = invalid or ( self.gridRadio.isChecked() and self.gridCombo.currentIndex() < 0 and self.gridCombo.currentText().isEmpty() )
-		invalid = invalid or ( self.towgs84Radio.isChecked() and self.towgs84Edit.text().isEmpty() )
+		invalid = invalid or ( self.inGridRadio.isChecked() and self.inGridCombo.currentIndex() < 0 and self.inGridCombo.currentText().isEmpty() )
+		invalid = invalid or ( self.inTowgs84Radio.isChecked() and self.inTowgs84Edit.text().isEmpty() )
 		invalid = invalid or ( self.inputCustomCrsNameEdit.text().isEmpty() or self.outputCustomCrsNameEdit.text().isEmpty() )
 		if invalid:
 			QMessageBox.warning(self, self.tr(u"Some required field is empty"), self.tr(u"You must fill all fields to continue.") )
@@ -137,23 +138,25 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 
 		self.transformation.name = self.nameEdit.text()
 
-		if self.gridRadio.isChecked():
-			index = self.gridCombo.currentIndex()
-			text = self.gridCombo.currentText()
-			if index < 0 or text != self.gridCombo.itemText( index ):
-				self.transformation.grid = text
+		self.transformation.inCrs = self.inputCrsEdit.text()
+		self.transformation.outCrs = self.outputCrsEdit.text()
+
+		if self.inGridRadio.isChecked():
+			index = self.inGridCombo.currentIndex()
+			text = self.inGridCombo.currentText()
+			if index < 0 or text != self.inGridCombo.itemText( index ):
+				self.transformation.inGrid = text
 			else:
-				self.transformation.grid = self.gridCombo.itemData( index ).toString()
+				self.transformation.inGrid = self.inGridCombo.itemData( index ).toString()
 		else:
-			self.transformation.grid = None
+			self.transformation.inGrid = None
 
-		self.transformation.towgs84 = self.towgs84Edit.text() if self.towgs84Radio.isChecked() else None
+		self.transformation.inTowgs84 = self.inTowgs84Edit.text() if self.inTowgs84Radio.isChecked() else None
 		self.transformation.extent = self.extentSelector.getExtent() if self.extentGroup.isChecked() else None
+		self.transformation.outTowgs84 = self.outTowgs84Edit.text() if not self.outTowgs84Edit.text().isEmpty() else None
 
-		self.transformation.incrs = self.inputCrsEdit.text()
-		self.transformation.outcrs = self.outputCrsEdit.text()
-		self.transformation.newincrsname = self.inputCustomCrsNameEdit.text()
-		self.transformation.newoutcrsname = self.outputCustomCrsNameEdit.text()
+		self.transformation.newInCrsName = self.inputCustomCrsNameEdit.text()
+		self.transformation.newOutCrsName = self.outputCustomCrsNameEdit.text()
 
 		self.onClosing()
 		return QDialog.accept(self)
