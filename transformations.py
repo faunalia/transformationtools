@@ -288,8 +288,13 @@ class Transformation:
 		return transformations
 
 
-	def isApplicableTo(self, crsA, crsB):
-		return self._sameBaseInputCrs( crsA ) and self._sameBaseOutputCrs( crsB )
+	def isApplicableTo(self, crsA, crsB, skipIfApplied=True):
+		if self._sameBaseInputCrs( crsA ) and self._sameBaseOutputCrs( crsB ):
+			if crsA == self.getInputCustomCrs() and crsB == self.getOutputCustomCrs():
+				# already applied
+				return True if not skipIfApplied else False
+			return True
+		return False
 
 
 	def _sameBaseInputCrs(self, crs):
@@ -336,7 +341,6 @@ class Transformation:
 		if not crs.isValid():
 			if not crs.createFromProj4( self.outCrs ):
 				qWarning( u"unable to create the output CRS from '%s'" % self.outCrs )
-		print ">>>>>", self.outCrs, crs.authid(), crs.toProj4()
 		return crs
 
 

@@ -100,6 +100,7 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 			for layer in self.iface.legendInterface().layers():
 				layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
 				# get valid transformations for the layer 
+				valid = False
 				if t.isApplicableTo(layerCrs, mapCrs) or t.isApplicableTo(mapCrs,layerCrs):
 					dlg = SelectTransformationDlg(layer.name(), layerCrs, mapCrs, self.iface.mainWindow())
 					if dlg.exec_():
