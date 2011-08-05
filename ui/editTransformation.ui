@@ -160,13 +160,13 @@
    <item row="5" column="0" colspan="6">
     <widget class="QGroupBox" name="groupBox_3">
      <property name="title">
-      <string>Generated custom CRSs</string>
+      <string>Custom CRSs (generated only if necessary)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="1" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>Custom CRS B name</string>
+         <string>CRS B name</string>
         </property>
        </widget>
       </item>
@@ -176,7 +176,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Custom CRS A name</string>
+         <string>CRS A name</string>
         </property>
        </widget>
       </item>

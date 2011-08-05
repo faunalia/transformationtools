@@ -89,9 +89,20 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 
 		self.extentGroup.setChecked( self.transformation.extent != None )
 		self.extentSelector.setExtent( self.transformation.extent )
-		
-		self.inputCustomCrsNameEdit.setText( to_string(self.transformation.newInCrsName) )
-		self.outputCustomCrsNameEdit.setText( to_string(self.transformation.newOutCrsName) )
+
+		if self.transformation.id != None:
+			newincrsname = to_string(self.transformation.newInCrsName)
+			if newincrsname != "":
+				self.inputCustomCrsNameEdit.setText( newincrsname )
+			else:
+				self.inputCustomCrsNameEdit.setText( self.transformation.getInputCustomCrs().authid() )
+
+			newoutcrsname = to_string(self.transformation.newOutCrsName)
+			if newoutcrsname != "":
+				self.outputCustomCrsNameEdit.setText( newoutcrsname )
+			else:
+				self.outputCustomCrsNameEdit.setText( self.transformation.getOutputCustomCrs().authid() )
+
 
 	def getPathToGrids(self):
 		settings = QSettings()
@@ -126,7 +137,6 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		invalid = invalid or ( self.inputCrsEdit.text().isEmpty() or self.outputCrsEdit.text().isEmpty() )
 		invalid = invalid or ( self.inGridRadio.isChecked() and self.inGridCombo.currentIndex() < 0 and self.inGridCombo.currentText().isEmpty() )
 		invalid = invalid or ( self.inTowgs84Radio.isChecked() and self.inTowgs84Edit.text().isEmpty() )
-		invalid = invalid or ( self.inputCustomCrsNameEdit.text().isEmpty() or self.outputCustomCrsNameEdit.text().isEmpty() )
 		if invalid:
 			QMessageBox.warning(self, self.tr(u"Some required field is empty"), self.tr(u"You must fill all fields to continue.") )
 			return
@@ -155,8 +165,10 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		self.transformation.extent = self.extentSelector.getExtent() if self.extentGroup.isChecked() else None
 		self.transformation.outTowgs84 = self.outTowgs84Edit.text() if not self.outTowgs84Edit.text().isEmpty() else None
 
-		self.transformation.newInCrsName = self.inputCustomCrsNameEdit.text()
-		self.transformation.newOutCrsName = self.outputCustomCrsNameEdit.text()
+		incrsname = self.inputCustomCrsNameEdit.text()
+		self.transformation.newInCrsName = incrsname if self.inputCustomCrsNameEdit.isEnabled() and not incrsname.isEmpty() else None
+		outcrsname = self.outputCustomCrsNameEdit.text()
+		self.transformation.newOutCrsName = outcrsname if self.outputCustomCrsNameEdit.isEnabled() and not outcrsname.isEmpty() else None
 
 		self.onClosing()
 		return QDialog.accept(self)

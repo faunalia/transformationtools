@@ -69,6 +69,7 @@ class TransformationsPlugin:
 
 
 	def runManager(self):
+		# run the manager
 		from transformationManagerDlg import TransformationManagerDlg
 		dlg = TransformationManagerDlg(self.iface, self.iface.mainWindow())
 		dlg.exec_()

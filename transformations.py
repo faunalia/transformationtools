@@ -70,8 +70,8 @@ class Transformation:
 		return Transformation.__connection.cursor()
 
 	@staticmethod
-	def __execute(sql, params=None, cursor=None, commitWhenCursor=False):
-		autoCommit = cursor == None or commitWhenCursor
+	def __execute(sql, params=None, cursor=None, forceCommit=False):
+		autoCommit = cursor == None or forceCommit
 		if cursor == None:
 			cursor = Transformation._getCursor()
 			if cursor == None:
@@ -80,7 +80,9 @@ class Transformation:
 		try:
 			cursor.execute( sql, params if params != None else [] )
 		except sqlite.OperationalError:
+			del cursor
 			Transformation.__connection.rollback()
+			Transformation.__connection = None
 			raise
 
 		if autoCommit:
@@ -89,6 +91,7 @@ class Transformation:
 
 	@staticmethod
 	def createTable(drop=False):
+
 		if drop:
 			sql = u"""DROP TABLE IF EXISTS tbl_transformation"""
 			Transformation.__execute( sql )
@@ -102,9 +105,9 @@ class Transformation:
 				outCrs varchar(255) NOT NULL,
 				outTowgs84 varchar(255) NULL,
 				extent varchar(255) NULL,
-				newInCrsName varchar(255) NOT NULL,
+				newInCrsName varchar(255) NULL,
 				newInCrsId varchar(255) NULL,
-				newOutCrsName varchar(255) NOT NULL,
+				newOutCrsName varchar(255) NULL,
 				newOutCrsId varchar(255) NULL,
 				enabled varchar(1) NOT NULL default 't'
 			)"""
@@ -140,13 +143,41 @@ class Transformation:
 		return True
 		
 	def saveData(self):
-		# this will add both CRSs to the tbl_srs table (done by QgsCoordinateReferenceSystem)
-		newinproj = self._getInputCustomCrs().toProj4()
-		newoutproj = self._getOutputCustomCrs().toProj4()
+		newincrs = self._getInputCustomCrs()
+		newoutcrs = self._getOutputCustomCrs()
+
+		# this will add not already known CRSs to the tbl_srs table
+		newinproj = newincrs.toProj4()
+		newoutproj = newoutcrs.toProj4()
 
 		cursor = Transformation._getCursor()
 		if cursor == None:
 			return False
+
+		# update the both input and output custom CRS
+		if self.newInCrsName != None:
+			params = [ unicode(newinproj) ]
+			sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
+			Transformation.__execute( sql, params, cursor )
+			row = cursor.fetchone()
+			if row != None:
+				params = [ unicode(self.newInCrsName), unicode(row[0]) ]
+				sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
+				Transformation.__execute( sql, params, cursor )
+			else:
+				self.newInCrsName = None
+
+		if self.newOutCrsName != None:
+			params = [ unicode(newoutproj) ]
+			sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
+			Transformation.__execute( sql, params, cursor )
+			row = cursor.fetchone()
+			if row != None:
+				params = [ unicode(self.newOutCrsName), unicode(row[0]) ]
+				sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
+				Transformation.__execute( sql, params, cursor )
+			else:
+				self.newOutCrsName = None
 
 		# don't take care about the id field, convert all params to strings
 		fields = Transformation.fields[1:]
@@ -161,30 +192,6 @@ class Transformation:
 			sql = u"UPDATE tbl_transformation SET %s WHERE id=?" % ( '=?,'.join(fields) + '=?' )
 			params.append( self.id )
 			Transformation.__execute( sql, params, cursor )
-
-		# update the both input and output custom CRS
-		params = [ unicode(newinproj) ]
-		sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
-		Transformation.__execute( sql, params, cursor )
-		row = cursor.fetchone()
-		if row != None:
-			params = [ unicode(self.newInCrsName), unicode(row[0]) ]
-			sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
-			Transformation.__execute( sql, params, cursor )
-		else:
-			qWarning(u">>> NO input crs record found??")
-
-
-		params = [ unicode(newoutproj) ]
-		sql = u"SELECT srs_id FROM tbl_srs WHERE parameters=? ORDER BY srs_id DESC LIMIT 1"
-		Transformation.__execute( sql, params, cursor )
-		row = cursor.fetchone()
-		if row != None:
-			params = [ unicode(self.newOutCrsName), unicode(row[0]) ]
-			sql = u"UPDATE tbl_srs SET description=? WHERE srs_id=?"
-			Transformation.__execute( sql, params, cursor )
-		else:
-			qWarning(u">>> NO output crs record found??")
 
 		Transformation.__connection.commit()
 		return True
@@ -433,6 +440,20 @@ class Transformation:
 		return proj4
 
 
-# create the table on qgis.db if not exists yet
-Transformation.createTable()
 
+# create the table on qgis.db if not exists yet
+dropNow = False
+vers_with_db_changes = ['', '0.0.3']
+
+settings = QSettings("/Transformation_Tools")
+#settings.setValue("/last_version", "")
+
+last_version = settings.value("/last_version", "").toString()
+import TransformationTools
+new_version = TransformationTools.version()
+if last_version != new_version:
+	settings.setValue("/last_version", new_version)
+	if last_version in vers_with_db_changes:
+		dropNow = True
+
+Transformation.createTable(dropNow)
