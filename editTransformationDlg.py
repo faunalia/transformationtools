@@ -106,11 +106,11 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 
 	def getPathToGrids(self):
 		settings = QSettings()
-		return settings.value( u"/transformations/pathToGrids", "" ).toString()
+		return settings.value( u"/TransformationTools/pathToGrids", "" ).toString()
 
 	def setPathToGrids(self, path):
 		settings = QSettings()
-		settings.setValue( u"/transformations/pathToGrids", path if path != None else "" )
+		settings.setValue( u"/TransformationTools/pathToGrids", path if path != None else "" )
 
 	def selectPathToGrids(self):
 		path = self.getPathToGrids()
@@ -140,11 +140,6 @@ class EditTransformationDlg(QDialog, Ui_Dialog):
 		if invalid:
 			QMessageBox.warning(self, self.tr(u"Some required field is empty"), self.tr(u"You must fill all fields to continue.") )
 			return
-
-		# don't overwrite different transformation with the same name
-		#if self.nameEdit.text() != self.transformation.name and Transformation.exists( self.nameEdit.text() ):
-		#	QMessageBox.warning(self, self.tr(u"Name exists"), self.tr(u"%s exists yet, use a different transformation name." % self.nameEdit.text()) )
-		#	return
 
 		self.transformation.name = self.nameEdit.text()
 

@@ -34,7 +34,7 @@ class TransformationsTableModel(QAbstractTableModel):
 		QAbstractTableModel.__init__(self, parent)
 		self.header = ( "Name", "CRS A", "CRS B", "Grid or params" )
 
-		self.manageEnabled = manageEnabled
+		self.manageEnabled = False #manageEnabled
 		self.enabledOnly = enabledOnly
 
 		self.row_count = 0
@@ -70,7 +70,7 @@ class TransformationsTableModel(QAbstractTableModel):
 			return QVariant()
 		t = self.transformations[ index.row() ]
 
-		if not self.enabledOnly and role == Qt.CheckStateRole and index.column() == 0:
+		if self.manageEnabled and not self.enabledOnly and role == Qt.CheckStateRole and index.column() == 0:
 			return Qt.Checked if t.enabled else Qt.Unchecked
 
 		if role == Qt.DisplayRole:
@@ -120,3 +120,4 @@ class FilteredTransformationsTableModel(TransformationsTableModel):
 
 	def getAtRow(self, row):
 		return self.transformations[row], self.isInverse[row]
+

@@ -380,7 +380,7 @@ class Transformation:
 				towgs84 = self.__valueIntoProj4(proj4, '+towgs84')
 
 				if towgs84 == None:
-					if not self.__existIntoProj(proj, '+datum'):
+					if not self.__existIntoProj4(proj4, '+datum'):
 						proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
 						crs.createFromProj4( proj4 )
 
@@ -414,7 +414,7 @@ class Transformation:
 		return self.__valueIntoProj4(proj4, param) != None
 
 	def __valueIntoProj4(self, proj4, param):
-		rxstr = "\s%s(?:\=(\S+))?\\b"  % QRegExp.escape(param)
+		rxstr = "[\s^](?:%(param)s(?:\=(\S+))?|\'%(param)s\=([^\']+)\')(?=[\s$])" % { 'param' : QRegExp.escape(param) }
 		regex = QRegExp(rxstr)
 		if regex.indexIn( proj4 ) < 0:
 			return None
@@ -427,7 +427,13 @@ class Transformation:
 			return proj4
 		proj4 = self.__removeFromProj4(proj4, params.keys())
 		for k, v in params.iteritems():
-			newstr = " %s=%s" % (k,v) if v != None else " %s" % k
+			newstr = " "
+			if v == None:
+				newstr += k
+			else:
+				newparam = "%s=%s" % (k,v)
+				newstr += "'%s'" % newparam if QString(v).contains(" ") else newparam
+
 			proj4 = QString(proj4).append( newstr )
 		return proj4
 
@@ -435,24 +441,141 @@ class Transformation:
 		if params == None:
 			return proj4
 		for k in params:
-			rxstr = "\s%s(?:\=\S+)?\\b"  % QRegExp.escape(k)
+			rxstr = "[\s^](?:%(param)s(?:\=(\S+))?|\'%(param)s\=([^\']+)\')(?=[\s$])" % { 'param' : QRegExp.escape(k) }
 			proj4 = QString(proj4).remove( QRegExp(rxstr) )
 		return proj4
 
 
+	### SECTION import/export from xml
+	XML_TRANSF_DOC = "QGisTransformationTools"
+	XML_TRANSF_LIST_TAG = "transformations"
+	XML_TRANSF_TAG = "transformation"
+
+	def _toNode(self, doc):
+		node = doc.createElement( self.XML_TRANSF_TAG )
+		for f in Transformation.fields:
+			if f == "id":
+				continue
+
+			v = getattr(self, f, None)
+			v = QString(v) if v != None else QString()
+
+			if f in [ "name", "enabled" ]:
+				node.setAttribute( f, v )
+			else:
+				child = doc.createElement( f )
+				node.appendChild( child )
+				t = doc.createTextNode( v )
+				child.appendChild( t )
+
+		return node
+
+	def _fromNode(self, node):
+		elem = node.toElement()
+		if elem.tagName() != self.XML_TRANSF_TAG:
+			return False
+
+		# set props from attributes
+		attrs = elem.attributes()
+		for i in range( attrs.count() ):
+			a = attrs.item( i ).toAttr()
+			f = unicode( a.name() )
+			if f == "id" or not f in Transformation.fields:
+				continue
+
+			v = a.value()
+			setattr(self, f, v if not v.isEmpty() else None)
+
+		# set props from nodes
+		childNode = elem.firstChild()
+		while not childNode.isNull():
+			dataNode = childNode.toElement().firstChild()
+			if not dataNode.isNull() and not dataNode.toText().isNull():
+				f = unicode( childNode.toElement().tagName() )
+				if f == "id" or not f in Transformation.fields:
+					continue
+
+				v = dataNode.toText().data()
+				setattr(self, f, v if not v.isEmpty() else None)
+			
+			childNode = childNode.nextSibling()
+
+		return True
+
+	@classmethod
+	def importFromXml(self, fn):
+		f = QFile( fn )
+		if not f.exists() or not f.open( QIODevice.ReadOnly ):
+			QMessageBox.warning( None, "Importing", "File not found." )
+			return False
+
+		if f.size() <= 0 or f.atEnd():
+			return False
+
+		from PyQt4.QtXml import QDomDocument
+		doc = QDomDocument( self.XML_TRANSF_DOC )
+		(ok, errMsg, errLine, errCol) = doc.setContent( f, False )
+		f.close()
+
+		if not ok:
+			QMessageBox.warning( None, "Importing", "Failed to parse file: line %s col %s" % (errLine, errCol) )
+			return False
+
+		root = doc.documentElement()
+		if root.tagName() == self.XML_TRANSF_LIST_TAG:
+			node = root.firstChild()
+			while not node.isNull():
+				if node.toElement().tagName() == self.XML_TRANSF_TAG:
+					t = Transformation()
+					if t._fromNode( node ):
+						if t.inGrid != None:
+							finfo = QFileInfo( t.inGrid )
+							if not finfo.exists():
+								t.inGrid = finfo.fileName()
+						t.saveData()
+
+				node = node.nextSibling()
+
+		return True
+
+
+	@classmethod
+	def exportToXml(self, fn):
+		from PyQt4.QtXml import QDomDocument
+		doc = QDomDocument( self.XML_TRANSF_DOC )
+
+		instr = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\" ")
+		doc.appendChild(instr)
+
+		root = doc.createElement( self.XML_TRANSF_LIST_TAG )
+		doc.appendChild( root )
+
+		for t in Transformation.getAll():
+			root.appendChild( t._toNode( doc ) )
+
+		f = QFile( fn )
+		if not f.open( QIODevice.WriteOnly ):
+			return False
+
+		xmlStream = QTextStream( f )
+		xmlStream.setCodec( QTextCodec.codecForName( "UTF-8" ) )
+		xmlStream << doc.toString()
+		return True
+
 
 # create the table on qgis.db if not exists yet
+# paying attention to db changes between different versions
 dropNow = False
 vers_with_db_changes = ['', '0.0.3']
 
-settings = QSettings("/Transformation_Tools")
-#settings.setValue("/last_version", "")
+settings = QSettings()
+#settings.setValue("/Transformation_Tools/last_version", "")
 
-last_version = settings.value("/last_version", "").toString()
+last_version = settings.value("/TransformationTools/last_version", "").toString()
 import TransformationTools
 new_version = TransformationTools.version()
 if last_version != new_version:
-	settings.setValue("/last_version", new_version)
+	settings.setValue("/TransformationTools/last_version", new_version)
 	if last_version in vers_with_db_changes:
 		dropNow = True
 

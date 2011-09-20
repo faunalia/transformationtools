@@ -27,6 +27,7 @@ from qgis.core import *
 from qgis.gui import *
 
 import resources_rc
+from pyspatialite import dbapi2 as sqlite
 
 class TransformationsPlugin:
 
@@ -91,6 +92,8 @@ class TransformationsPlugin:
 				layerCrs, mapCrs = dlg.getCrss()
 				(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)( mapCrs )
 				layer.setCrs( layerCrs )
+				canvas.mapRenderer().setProjectionsEnabled( True )
+
 			dlg.deleteLater()
 			del dlg
 		finally:

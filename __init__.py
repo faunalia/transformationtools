@@ -27,10 +27,13 @@ def description():
 	return "Help using NTv2 grids or towgs84 parameters to transform -or reproject on the fly- vectors and rasters"
 
 def version():
-	return "0.0.5"
+	return "0.1.0"
 
 def qgisMinimumVersion():
 	return "1.6.0"
+
+def icon():
+	return "icons/transformation_manager.png"
 
 def authorName():
 	return "Giuseppe Sucameli (Faunalia)"

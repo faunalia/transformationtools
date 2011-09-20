@@ -20,7 +20,7 @@
       <string>Transformations list</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0" rowspan="4">
+      <item row="0" column="0" rowspan="6">
        <widget class="QTableView" name="table">
         <property name="selectionMode">
          <enum>QAbstractItemView::SingleSelection</enum>
@@ -39,21 +39,21 @@
       <item row="0" column="1">
        <widget class="QPushButton" name="newBtn">
         <property name="text">
-         <string>New</string>
+         <string>&amp;New</string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
        <widget class="QPushButton" name="editBtn">
         <property name="text">
-         <string>Edit</string>
+         <string>&amp;Edit</string>
         </property>
        </widget>
       </item>
       <item row="2" column="1">
        <widget class="QPushButton" name="deleteBtn">
         <property name="text">
-         <string>Delete</string>
+         <string>&amp;Delete</string>
         </property>
        </widget>
       </item>
@@ -69,6 +69,20 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item row="4" column="1">
+       <widget class="QPushButton" name="exportBtn">
+        <property name="text">
+         <string>&amp;Export</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QPushButton" name="importBtn">
+        <property name="text">
+         <string>&amp;Import</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

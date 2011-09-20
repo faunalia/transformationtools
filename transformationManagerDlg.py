@@ -25,6 +25,7 @@ from PyQt4.QtGui import *
 
 from transformationsTableModel import TransformationsTableModel
 from ui.transformationManager_ui import Ui_Dialog
+from transformations import Transformation
 
 class TransformationManagerDlg(QDialog, Ui_Dialog):
 	
@@ -46,10 +47,13 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 		self.connect(self.deleteBtn, SIGNAL("clicked()"), self.deleteItem)
 		self.connect(self.applyDirectBtn, SIGNAL("clicked()"), self.applyDirectTransf)
 		self.connect(self.applyInverseBtn, SIGNAL("clicked()"), self.applyInverseTransf)
+
+		self.connect(self.importBtn, SIGNAL("clicked()"), self.importFromFile)
+		self.connect(self.exportBtn, SIGNAL("clicked()"), self.exportToFile)
+
 		self.itemChanged()
 
 	def createNew(self):
-		from transformations import Transformation
 		self.editTransformation( Transformation() )
 
 	def editTransformation(self, t):
@@ -106,6 +110,8 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 				layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
 				if t.isApplicableTo(layerCrs, mapCrs):
 					layer.setCrs( t.getInputCustomCrs(isInverse) )
+
+			canvas.mapRenderer().setProjectionsEnabled( True )
 		finally:
 			canvas.setRenderFlag(prevRender)
 
@@ -124,4 +130,48 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 		self.table.model().reloadData()
 		self.table.model().reset()
 		self.itemChanged()
+
+
+	### SECTION import/export transformations
+
+	def exportToFile(self):
+		outfile = QFileDialog.getSaveFileName(self, self.tr( "Select where to export transformations" ), self.lastImportFile(), self.tr( "XML file (*.xml)" ))
+		if outfile.isEmpty():
+			return
+		if not outfile.endsWith( ".xml", Qt.CaseInsensitive ):
+			outfile += ".xml"
+		self.setLastImportFile( outfile )
+
+		return Transformation.exportToXml( outfile )
+
+	def importFromFile(self):
+		tlist = Transformation.getAll()
+		if len( tlist ) > 0:
+			ret = QMessageBox.question(self, self.tr( "Import" ), self.tr( "Do you want to keep the defined transformations?" ), QMessageBox.Yes | QMessageBox.No )
+
+		infile = QFileDialog.getOpenFileName(self, self.tr( "Select the file containing transformations" ), self.lastImportFile(), self.tr( "XML file (*.xml)" ))
+		if infile.isEmpty():
+			return
+		self.setLastImportFile( infile )
+
+		if len( tlist ) > 0 and ret == QMessageBox.No:
+			# clear all existent transformations before continue
+			for t in tlist:
+				t.deleteData()
+
+		if not Transformation.importFromXml( infile ):
+			return False
+
+		self.table.model().reloadData()
+		self.table.model().reset()
+		return True
+		
+
+	def lastImportFile(self):
+		settings = QSettings()
+		return settings.value( u"/TransformationTools/lastImportFile", "" ).toString()
+
+	def setLastImportFile(self, path):
+		settings = QSettings()
+		settings.setValue( u"/TransformationTools/lastImportFile", path if path != None else "" )
 
