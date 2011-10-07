@@ -108,8 +108,13 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 
 			for layer in self.iface.legendInterface().layers():
 				layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
+				# layer CRS and project CRS match the transformation CRSs
 				if t.isApplicableTo(layerCrs, mapCrs):
 					layer.setCrs( t.getInputCustomCrs(isInverse) )
+				elif t._sameBaseOutputCrs(layerCrs):
+					# the layer CRS is pretty the same of the new project CRS, 
+					# use the new project CRS
+					layer.setCrs( t.getOutputCustomCrs(isInverse) )
 
 			canvas.mapRenderer().setProjectionsEnabled( True )
 		finally:
