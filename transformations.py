@@ -353,53 +353,50 @@ class Transformation:
 
 	def _getInputCustomCrs(self):
 		crs = self._getInputCrs()
+		proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids', '+towgs84', '+wktext'])
 		if self.useGrid():
-			proj4 = self.__removeFromProj4(crs.toProj4(), ['+towgs84'])
-			proj4 = self.__addToProj4(proj4, {'+nadgrids':self.inGrid, '+wktext':None})
-			crs.createFromProj4( proj4 )
+			proj4 = self.__addToProj4(proj4, {'+nadgrids':self.inGrid})
 		elif self.useTowgs84():
-			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids'])
 			proj4 = self.__addToProj4(proj4, {'+towgs84':self.inTowgs84, '+wktext':None})
-			crs.createFromProj4( proj4 )
+		proj4 = self.__addToProj4(proj4, {'+wktext':None})
+		crs.createFromProj4( proj4 )
 		return crs
 
 	def _getOutputCustomCrs(self):
 		crs = self._getOutputCrs()
 		if self.useGrid() or self.useTowgs84():
-			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids'])
-
-			# try to avoid duplicated CRSs
-
-			if False and self.outTowgs84 != None:	# TODO self.ouTowgs84 not supported
-				# if a new towgs84 param value was defined
+			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids', '+towgs84', '+wktext'])
+			# if a new towgs84 param value was defined
+			if False and self.outTowgs84 != None:	# TODO self.outTowgs84 not supported yet
 				proj4 = self.__addToProj4(proj4, {'+towgs84':self.outTowgs84, '+wktext':None})
-				crs.createFromProj4( proj4 )
-
 			else: 
-				# either datum or towgs84 is required
-				towgs84 = self.__valueIntoProj4(proj4, '+towgs84')
+				if QString(self.name).startsWith('#'):	#use nadgrids=null param
+					proj4 = self.__addToProj4(proj4, {'+nadgrids':'null'})
 
-				if towgs84 == None:
-					if not self.__existIntoProj4(proj4, '+datum'):
-						proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
-						crs.createFromProj4( proj4 )
+				else:	#use towgs84=0,0,0 param
+					# either datum or towgs84 is required
+					towgs84 = self.__valueIntoProj4(proj4, '+towgs84')
 
-				else:
-					# check if towgs84 param has zero values only
-					for x in towgs84.split(','):
-						# both 0 (int) and 0.000... (float) are valid values 
-						try:
-							x = float(x)
-						except ValueError:
-							x = None
-						if x != 0:
-							towgs84 = None
-							break
-
-					# if towgs84 param has some values different from zero
 					if towgs84 == None:
-						proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
-						crs.createFromProj4( proj4 )
+						if not self.__existIntoProj4(proj4, '+datum'):
+							proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
+							crs.createFromProj4( proj4 )
+
+					else:
+						# check if towgs84 param has zero values only
+						for x in towgs84.split(','):
+							# both 0 (int) and 0.000... (float) are valid values 
+							if not self.__valuesAreEqual(towgs84, 0):
+								towgs84 = None
+								break
+
+						# if towgs84 param has some values different from zero
+						if towgs84 == None:
+							proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
+							crs.createFromProj4( proj4 )
+					return crs
+
+			crs.createFromProj4( proj4 )
 		return crs
 
 
@@ -410,9 +407,11 @@ class Transformation:
 		return self._getOutputCustomCrs() if not inverseTransformation else self._getInputCustomCrs()
 
 
+	@classmethod
 	def __existIntoProj4(self, proj4, param):
 		return self.__valueIntoProj4(proj4, param) != None
 
+	@classmethod
 	def __valueIntoProj4(self, proj4, param):
 		rxstr = "[\s^](?:%(param)s(?:\=(\S+))?|\'%(param)s\=([^\']+)\')(?=[\s$])" % { 'param' : QRegExp.escape(param) }
 		regex = QRegExp(rxstr)
@@ -422,6 +421,7 @@ class Transformation:
 			return ""
 		return regex.cap(1)
 
+	@classmethod
 	def __addToProj4(self, proj4, params=None):
 		if params == None:
 			return proj4
@@ -437,6 +437,7 @@ class Transformation:
 			proj4 = QString(proj4).append( newstr )
 		return proj4
 
+	@classmethod
 	def __removeFromProj4(self, proj4, params=None):
 		if params == None:
 			return proj4
@@ -444,6 +445,17 @@ class Transformation:
 			rxstr = "[\s^](?:%(param)s(?:\=(\S+))?|\'%(param)s\=([^\']+)\')(?=[\s$])" % { 'param' : QRegExp.escape(k) }
 			proj4 = QString(proj4).remove( QRegExp(rxstr) )
 		return proj4
+
+	@classmethod
+	def __valuesAreEqual(self, value1, value2):
+		if value1 == value2:
+			return True
+		try:
+			val1 = float(value1)
+			val2 = float(value1)
+		except ValueError:
+			return False
+		return abs(val1 - val2) < 0.000001
 
 
 	### SECTION import/export from xml

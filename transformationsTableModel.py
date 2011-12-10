@@ -73,14 +73,20 @@ class TransformationsTableModel(QAbstractTableModel):
 		if self.manageEnabled and not self.enabledOnly and role == Qt.CheckStateRole and index.column() == 0:
 			return Qt.Checked if t.enabled else Qt.Unchecked
 
-		if role == Qt.DisplayRole:
+		if role == Qt.DisplayRole or role == Qt.ToolTipRole:
 			val = None
 			if index.column() == 0:
 				val = t.name
 			elif index.column() == 1:
-				val = t.inCrs
+				if role == Qt.DisplayRole:
+					val = t.inCrs
+				elif role == Qt.ToolTipRole:
+					val = t._getInputCrs().toProj4()
 			elif index.column() == 2:
-				val = t.outCrs
+				if role == Qt.DisplayRole:
+					val = t.outCrs
+				elif role == Qt.ToolTipRole:
+					val = t._getOutputCrs().toProj4()
 			elif index.column() == 3:
 				if t.useTowgs84():
 					val = "towgs84=%s" % t.inTowgs84
