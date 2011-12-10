@@ -2,6 +2,7 @@
     <qresource prefix="/plugins/TransformationTools">
         <file>icons/transformation_manager.png</file>
         <file>icons/tooltip.png</file>
+        <file>icons/about.png</file>
     </qresource>
     <qresource prefix="/faunalia">
         <file alias="logo">icons/faunalia_logo.png</file>

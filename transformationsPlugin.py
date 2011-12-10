@@ -42,7 +42,7 @@ class TransformationsPlugin:
 		self.transformAction = QAction(QIcon(), "Transform Tool", self.iface.mainWindow())
 		QObject.connect(self.transformAction, SIGNAL("triggered()"), self.runTransform)
 
-		self.aboutAction = QAction("About", self.iface.mainWindow())
+		self.aboutAction = QAction(QIcon(":/plugins/TransformationTools/icons/about.png"), "About", self.iface.mainWindow())
 		QObject.connect(self.aboutAction, SIGNAL("triggered()"), self.about)
 
 
