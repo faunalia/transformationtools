@@ -102,19 +102,26 @@ class TransformationManagerDlg(QDialog, Ui_Dialog):
 		prevRender = canvas.renderFlag()
 		try:
 			canvas.setRenderFlag(False)
+
+			# set the new project CRS
 			mapRenderer = canvas.mapRenderer()
-			mapCrs = (mapRenderer.destinationCrs if hasattr(mapRenderer, 'destinationCrs') else mapRenderer.destinationSrs)()
-			(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)( t.getOutputCustomCrs(isInverse) )
+			mapCrs = t.getOutputCustomCrs(isInverse)
+			(mapRenderer.setDestinationCrs if hasattr(mapRenderer, 'setDestinationCrs') else mapRenderer.setDestinationSrs)( mapCrs )
 
 			for layer in self.iface.legendInterface().layers():
 				layerCrs = (layer.crs if hasattr(layer, 'crs') else layer.srs)()
-				# layer CRS and project CRS match the transformation CRSs
-				if t.isApplicableTo(layerCrs, mapCrs):
+				#print ">>> layer:", layer.name(), "\n", layerCrs.toProj4()
+				#print ">>> canvas:", "\n", mapCrs.toProj4()
+
+				if t.hasSameInputCrsBase(layerCrs, isInverse):
+					# layer CRS and project CRS match the transformation CRSs, 
+					# let's apply it!
 					layer.setCrs( t.getInputCustomCrs(isInverse) )
-				elif t._sameBaseOutputCrs(layerCrs):
+
+				elif t.hasSameOutputCrsBase(layerCrs, isInverse):
 					# the layer CRS is pretty the same of the new project CRS, 
 					# use the new project CRS
-					layer.setCrs( t.getOutputCustomCrs(isInverse) )
+					layer.setCrs( mapCrs )
 
 			canvas.mapRenderer().setProjectionsEnabled( True )
 		finally:

@@ -296,7 +296,7 @@ class Transformation:
 
 
 	def isApplicableTo(self, crsA, crsB, skipIfApplied=True):
-		if self._sameBaseInputCrs( crsA ) and self._sameBaseOutputCrs( crsB ):
+		if self.hasSameInputCrsBase( crsA ) and self.hasSameOutputCrsBase( crsB ):
 			if crsA == self.getInputCustomCrs() and crsB == self.getOutputCustomCrs():
 				# already applied
 				return True if not skipIfApplied else False
@@ -304,43 +304,37 @@ class Transformation:
 		return False
 
 
-	def _sameBaseInputCrs(self, crs):
-		incrs = self._getInputCrs()
-		if crs == incrs:	# it's the same
+	def sameBaseCrs(self, crs1, crs2):
+		if crs1 == crs2:	# it's the same!
 			return True
 
 		# remove towgs84, nadgrids and wktext from both and try again
-		newcrs = QgsCoordinateReferenceSystem()
-		inproj4 = self.__removeFromProj4(incrs.toProj4(), ['+towgs84', '+nadgrids', '+wktext'])
-		newproj4 = self.__removeFromProj4(crs.toProj4(), ['+towgs84', '+nadgrids', '+wktext'])
-		if incrs.createFromProj4( inproj4 ) and incrs.isValid() and \
-				newcrs.createFromProj4( newproj4 ) and newcrs.isValid():
-			if newcrs == incrs:
+		proj4str1 = self.__removeFromProj4(crs1.toProj4(), ['+towgs84', '+nadgrids', '+wktext'])
+		proj4str2 = self.__removeFromProj4(crs2.toProj4(), ['+towgs84', '+nadgrids', '+wktext'])
+
+		newcrs1 = QgsCoordinateReferenceSystem()
+		newcrs2 = QgsCoordinateReferenceSystem()
+		if newcrs1.createFromProj4( proj4str1 ) and newcrs1.isValid() and \
+				newcrs2.createFromProj4( proj4str2 ) and newcrs2.isValid():
+			if newcrs1 == newcrs2:
 				return True
 
 		return False
 
-	def _sameBaseOutputCrs(self, crs):
-		outcrs = self._getOutputCrs()
-		if crs == outcrs:	# it's the same
-			return True
+	def hasSameInputCrsBase(self, crs, isInverse=False):
+		incrs = self.getInputCrs(isInverse)
+		return self.sameBaseCrs(crs, incrs)
 
-		# remove towgs84, nadgrids and wktext from both and try again
-		newcrs = QgsCoordinateReferenceSystem()
-		outproj4 = self.__removeFromProj4(outcrs.toProj4(), ['+towgs84', '+nadgrids', '+wktext'])
-		newproj4 = self.__removeFromProj4(crs.toProj4(), ['+towgs84', '+nadgrids', '+wktext'])
-		if outcrs.createFromProj4( outproj4 ) and outcrs.isValid() and \
-				newcrs.createFromProj4( newproj4 ) and newcrs.isValid():
-			if newcrs == outcrs:
-				return True
+	def hasSameOutputCrsBase(self, crs, isInverse=False):
+		outcrs = self.getOutputCrs(isInverse)
+		return self.sameBaseCrs(crs, outcrs)
 
-		return False
 
 	def _getInputCrs(self):
 		crs = QgsCoordinateReferenceSystem( self.inCrs )
 		if not crs.isValid():
 			if not crs.createFromProj4( self.inCrs ):
-				qWarning( u"unable to create the output CRS from '%s'" % self.inCrs )
+				qWarning( u"unable to create the input CRS from '%s'" % self.inCrs )
 		return crs
 
 	def _getOutputCrs(self):
@@ -350,100 +344,126 @@ class Transformation:
 				qWarning( u"unable to create the output CRS from '%s'" % self.outCrs )
 		return crs
 
+	def getInputCrs(self, isInverse=False):
+		return self._getInputCrs() if not isInverse else self._getOutputCrs()
+
+	def getOutputCrs(self, isInverse=False):
+		return self._getOutputCrs() if not isInverse else self._getInputCrs()
+
 
 	def _getInputCustomCrs(self):
 		crs = self._getInputCrs()
+		proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids', '+towgs84', '+wktext'])
 		if self.useGrid():
-			proj4 = self.__removeFromProj4(crs.toProj4(), ['+towgs84'])
 			proj4 = self.__addToProj4(proj4, {'+nadgrids':self.inGrid, '+wktext':None})
-			crs.createFromProj4( proj4 )
 		elif self.useTowgs84():
-			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids'])
 			proj4 = self.__addToProj4(proj4, {'+towgs84':self.inTowgs84, '+wktext':None})
-			crs.createFromProj4( proj4 )
+		crs.createFromProj4( proj4 )
 		return crs
 
 	def _getOutputCustomCrs(self):
 		crs = self._getOutputCrs()
 		if self.useGrid() or self.useTowgs84():
-			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids'])
-
-			# try to avoid duplicated CRSs
-
-			if False and self.outTowgs84 != None:	# TODO self.ouTowgs84 not supported
-				# if a new towgs84 param value was defined
+			proj4 = self.__removeFromProj4(crs.toProj4(), ['+nadgrids', '+towgs84', '+wktext'])
+			if False and self.outTowgs84 != None:	# TODO self.outTowgs84 not supported yet
+				# if a new +towgs84 param value was defined
 				proj4 = self.__addToProj4(proj4, {'+towgs84':self.outTowgs84, '+wktext':None})
-				crs.createFromProj4( proj4 )
-
 			else: 
-				# either datum or towgs84 is required
-				towgs84 = self.__valueIntoProj4(proj4, '+towgs84')
+				# use +nadgrids=null param
+				proj4 = self.__addToProj4(proj4, {'+nadgrids':'null', '+wktext':None})
 
-				if towgs84 == None:
-					if not self.__existIntoProj4(proj4, '+datum'):
-						proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
-						crs.createFromProj4( proj4 )
-
-				else:
-					# check if towgs84 param has zero values only
-					for x in towgs84.split(','):
-						# both 0 (int) and 0.000... (float) are valid values 
-						try:
-							x = float(x)
-						except ValueError:
-							x = None
-						if x != 0:
-							towgs84 = None
-							break
-
-					# if towgs84 param has some values different from zero
-					if towgs84 == None:
-						proj4 = self.__addToProj4(proj4, {'+towgs84':'0,0,0', '+wktext':None})
-						crs.createFromProj4( proj4 )
+			crs.createFromProj4( proj4 )
 		return crs
 
 
-	def getInputCustomCrs(self, inverseTransformation=False):
-		return self._getInputCustomCrs() if not inverseTransformation else self._getOutputCustomCrs()
+	def getInputCustomCrs(self, isInverse=False):
+		return self._getInputCustomCrs() if not isInverse else self._getOutputCustomCrs()
 
-	def getOutputCustomCrs(self, inverseTransformation=False):
-		return self._getOutputCustomCrs() if not inverseTransformation else self._getInputCustomCrs()
+	def getOutputCustomCrs(self, isInverse=False):
+		return self._getOutputCustomCrs() if not isInverse else self._getInputCustomCrs()
 
 
+	@classmethod
 	def __existIntoProj4(self, proj4, param):
 		return self.__valueIntoProj4(proj4, param) != None
 
+	@classmethod
 	def __valueIntoProj4(self, proj4, param):
-		rxstr = "[\s^](?:%(param)s(?:\=(\S+))?|\'%(param)s\=([^\']+)\')(?=[\s$])" % { 'param' : QRegExp.escape(param) }
-		regex = QRegExp(rxstr)
-		if regex.indexIn( proj4 ) < 0:
-			return None
-		if regex.pos(1) < 0:
-			return ""
-		return regex.cap(1)
+		parts = self.__proj4StringToParts(proj4)
+		if not parts.has_key( param ):
+			return None	# param not found
+		val = parts[ param ]
+		return val if val != None else ""
 
+	@classmethod
 	def __addToProj4(self, proj4, params=None):
 		if params == None:
 			return proj4
-		proj4 = self.__removeFromProj4(proj4, params.keys())
+
+		parts = self.__proj4StringToParts(proj4)
 		for k, v in params.iteritems():
-			newstr = " "
-			if v == None:
-				newstr += k
-			else:
-				newparam = "%s=%s" % (k,v)
-				newstr += "'%s'" % newparam if QString(v).contains(" ") else newparam
+			parts[k] = v
+		return self.__proj4PartsToString( parts )
 
-			proj4 = QString(proj4).append( newstr )
-		return proj4
-
+	@classmethod
 	def __removeFromProj4(self, proj4, params=None):
 		if params == None:
 			return proj4
+
+		parts = self.__proj4StringToParts(proj4)
 		for k in params:
-			rxstr = "[\s^](?:%(param)s(?:\=(\S+))?|\'%(param)s\=([^\']+)\')(?=[\s$])" % { 'param' : QRegExp.escape(k) }
-			proj4 = QString(proj4).remove( QRegExp(rxstr) )
+			if parts.has_key(k):
+				del parts[k]
+
+		return self.__proj4PartsToString( parts )
+
+
+	@classmethod
+	def __proj4StringToParts(self, proj4string):
+		parts = QString(proj4string).split( QRegExp( "\\s+(?=\\+[a-z][a-z_0-9]*)" ), QString.SkipEmptyParts )
+		part_dict = {}
+		for p in parts:
+			regex = QRegExp( "^(\\+[a-z][a-z_0-9]*)(?:\\=(.+))?$" )
+			if regex.indexIn( p ) < 0:
+				continue
+
+			if regex.pos(1) < 0:
+				continue
+			name = unicode(regex.cap(1))
+
+			value = None
+			if regex.pos(2) >= 0:
+				value = unicode(regex.cap(2))
+
+			part_dict[ name ] = value
+
+		return part_dict
+
+	@classmethod
+	def __proj4PartsToString(self, proj4parts):
+		parts = dict( proj4parts )
+
+		# the proj4string must start with +proj=...
+		if parts.has_key("+proj"):
+			proj4 = u"+proj=%s" % parts["+proj"]
+			del parts["+proj"]
+
+		for k, v in parts.iteritems():
+			proj4 += u" %s" % k if v == None else u" %s=%s" % (k,v)
+
 		return proj4
+
+
+	@classmethod
+	def __valuesAreEqual(self, value1, value2):
+		if value1 == value2:
+			return True
+		try:
+			val1 = float(value1)
+			val2 = float(value1)
+		except ValueError:
+			return False
+		return abs(val1 - val2) < 0.000001
 
 
 	### SECTION import/export from xml
