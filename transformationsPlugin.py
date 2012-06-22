@@ -27,6 +27,8 @@ from qgis.core import *
 from qgis.gui import *
 
 import resources_rc
+
+# raise an exception if pyspatialite is not installed
 from pyspatialite import dbapi2 as sqlite
 
 class TransformationsPlugin:

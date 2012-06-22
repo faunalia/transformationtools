@@ -583,20 +583,25 @@ class Transformation:
 		return True
 
 
-# create the table on qgis.db if not exists yet
-# paying attention to db changes between different versions
-dropNow = False
-vers_with_db_changes = ['', '0.0.3']
 
-settings = QSettings()
-#settings.setValue("/Transformation_Tools/last_version", "")
+def initializedb():
+	""" create the table on qgis.db if not exists yet
+	 paying attention to db changes between different versions """
 
-last_version = settings.value("/TransformationTools/last_version", "").toString()
-import TransformationTools
-new_version = TransformationTools.version()
-if last_version != new_version:
-	settings.setValue("/TransformationTools/last_version", new_version)
-	if last_version in vers_with_db_changes:
-		dropNow = True
+	dropNow = False
+	vers_with_db_changes = ['', '0.0.3']
 
-Transformation.createTable(dropNow)
+	settings = QSettings()
+	#settings.setValue("/Transformation_Tools/last_version", "")
+
+	last_version = settings.value("/TransformationTools/last_version", "").toString()
+	import TransformationTools
+	new_version = TransformationTools.version()
+	if last_version != new_version:
+		settings.setValue("/TransformationTools/last_version", new_version)
+		if last_version in vers_with_db_changes:
+			dropNow = True
+
+	Transformation.createTable(dropNow)
+
+initializedb()
