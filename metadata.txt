@@ -1,0 +1,29 @@
+; the next section is mandatory
+[general]
+name=Transformation Tools
+description=Help using NTv2 grids or towgs84 parameters to transform -or reproject on the fly- vectors and rasters
+version=0.1.3
+qgisMinimumVersion=1.6.0
+
+; not used yet, will allow to put a plugin in the right menu
+category=Plugin
+
+; end of mandatory metadata
+
+; start of optional metadata
+author=Giuseppe Sucameli (Faunalia)
+
+changelog=
+
+; tags are in comma separated value format, spaces are allowed
+tags=ntv2,grids,transformation
+
+homepage=http://www.faunalia.com/
+tracker=http://hub.qgis.org/projects/transformationtools
+repository=http://hub.qgis.org/projects/transformationtools/repository
+
+; path to a icon within the plugin folder
+icon=icons/transformation_manager.png
+
+experimental=False
+deprecated=False
